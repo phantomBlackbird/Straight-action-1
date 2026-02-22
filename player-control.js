@@ -2,32 +2,80 @@ AFRAME.registerComponent('mobile-player-controller', {
   init: function () {
     const el = this.el;
     this.activeAction = "idle";
+    this.gunAttached = false;
     
-    // Updated Scale: 5 times smaller than 0.072
-    el.setAttribute('scale', '0.0144 0.0144 0.0144');
+    // Scale the character
+    el.setAttribute('scale', '0.072 0.072 0.072');
 
+    // Wait for model to load
     el.addEventListener('model-loaded', () => {
-      const mesh = el.getObject3D('mesh');
-      const gun = document.querySelector('#gun').object3D;
-      
-      // Using the renamed bone from the gltf-transform script
-      const handBone = mesh.getObjectByName('Hand_R');
-
-      if (handBone) {
-        handBone.add(gun); 
-        gun.position.set(0, 0, 0); 
-        gun.rotation.set(Math.PI / 2, 0, 0);
-        // Ensure gun is scaled appropriately to the tiny player
-        gun.scale.set(1, 1, 1); 
-      }
+      this.attachGunToHand();
     });
+  },
 
-    window.addEventListener('action-start', (e) => { this.activeAction = e.detail.type; });
-    window.addEventListener('action-stop', () => { this.activeAction = "idle"; });
+  attachGunToHand: function() {
+    if (this.gunAttached) return;
+    
+    const el = this.el;
+    const model = el.getObject3D('mesh');
+    if (!model) return;
+
+    // Try different possible hand bone names
+    const handBoneNames = [
+      'mixamorigRightHand',
+      'RightHand',
+      'hand_r',
+      'Hand_R',
+      'Right_Hand',
+      'mixamorig:RightHand'
+    ];
+    
+    let handBone = null;
+    for (const boneName of handBoneNames) {
+      handBone = model.getObjectByName(boneName);
+      if (handBone) {
+        console.log('Found hand bone:', boneName);
+        break;
+      }
+    }
+
+    if (handBone) {
+      // Get the gun entity and its 3D object
+      const gunEntity = document.querySelector('#gun');
+      const gunModel = gunEntity.getObject3D('mesh');
+      
+      if (gunModel) {
+        // Remove from original parent and add to hand bone
+        gunModel.parent.remove(gunModel);
+        handBone.add(gunModel);
+        
+        // Position and rotate the gun relative to the hand
+        // You may need to adjust these values based on your models
+        gunModel.position.set(0.02, -0.01, 0.03); // Fine-tune these values
+        gunModel.rotation.set(0, Math.PI / 2, 0); // Rotate to align with hand
+        gunModel.scale.set(0.5, 0.5, 0.5); // Scale the gun to match player size
+        
+        // Make gun visible now that it's attached
+        gunEntity.setAttribute('visible', 'true');
+        
+        this.gunAttached = true;
+        console.log('Gun attached to hand successfully');
+      } else {
+        // If gun model not loaded yet, wait for it
+        gunEntity.addEventListener('model-loaded', () => {
+          this.attachGunToHand();
+        });
+      }
+    } else {
+      console.warn('Hand bone not found, retrying in 1 second...');
+      // Retry after a short delay (model might still be loading)
+      setTimeout(() => this.attachGunToHand(), 1000);
+    }
   },
 
   tick: function () {
-    const mixer = this.el.getAttribute('animation-mixer');
+    const el = this.el;
+    const mixer = el.components['animation-mixer'];
     let targetAnim = "idle";
 
     if (this.activeAction === "shoot") {
@@ -36,19 +84,18 @@ AFRAME.registerComponent('mobile-player-controller', {
       targetAnim = "reloading";
     } else if (this.activeAction === "move") {
       targetAnim = "run-forward";
-      const pos = this.el.getAttribute('position');
-      pos.z -= 0.02; // Adjusted speed for smaller scale
-      this.el.setAttribute('position', pos);
+      // Forward Movement logic
+      const pos = el.getAttribute('position');
+      pos.z -= 0.05; 
+      el.setAttribute('position', pos);
     }
 
+    // Update animation if changed
     if (mixer && mixer.clip !== targetAnim) {
-      this.el.setAttribute('animation-mixer', {clip: targetAnim, crossFadeDuration: 0.2});
+      el.setAttribute('animation-mixer', {
+        clip: targetAnim, 
+        crossFadeDuration: 0.2
+      });
     }
   }
 });
-
-function sendAction(type, active) {
-  const eventName = active ? 'action-start' : 'action-stop';
-  window.dispatchEvent(new CustomEvent(eventName, { detail: { type: type } }));
-}
-
