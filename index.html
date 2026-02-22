@@ -1,17 +1,38 @@
-<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/clydenelson/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-  <script src="player-controls.js"></script>
   <style>
-    .controls { position: fixed; bottom: 30px; width: 100%; z-index: 999; display: flex; justify-content: space-around; }
-    .btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: 2px solid #fff; touch-action: none; }
+    /* Mobile UI Buttons */
+    .controls { 
+      position: fixed; 
+      bottom: 20px; 
+      width: 100%; 
+      z-index: 999; 
+      display: flex; 
+      justify-content: space-around; 
+      pointer-events: none;
+    }
+    .btn { 
+      width: 80px; 
+      height: 80px; 
+      border-radius: 50%; 
+      background: rgba(0,0,0,0.5); 
+      color: white; 
+      border: 2px solid white; 
+      font-weight: bold; 
+      touch-action: manipulation;
+      pointer-events: auto;
+      font-size: 16px;
+    }
+    .btn:active { 
+      background: rgba(255, 0, 0, 0.6); 
+    }
   </style>
 </head>
-<body>
 
+<body>
   <div class="controls">
     <button class="btn" onpointerdown="sendAction('move', true)" onpointerup="sendAction('move', false)">MOVE</button>
     <button class="btn" onpointerdown="sendAction('reload', true)" onpointerup="sendAction('reload', false)">RELOAD</button>
@@ -21,12 +42,13 @@
   <a-scene>
     <a-assets>
       <a-asset-item id="playerModel" src="Player.glb"></a-asset-item>
-      <a-asset-item id="gunModel" src="Mpsd.glb"></a-asset-item>
+      <a-asset-item id="gunModel" src="Gun1.glb"></a-asset-item>
     </a-assets>
 
-    <a-entity camera position="0 0.5 1.5" look-controls></a-entity>
+    <a-entity camera position="0 2 5" look-controls></a-entity>
 
-    <a-entity id="gun" gltf-model="#gunModel"></a-entity>
+    <!-- Hide the gun entity initially - we'll attach it to the hand -->
+    <a-entity id="gun" gltf-model="#gunModel" visible="false"></a-entity>
 
     <a-entity id="character"
               gltf-model="#playerModel"
@@ -34,8 +56,16 @@
               animation-mixer="clip: idle">
     </a-entity>
 
-    <a-plane rotation="-90 0 0" width="100" height="100" color="#222"></a-plane>
+    <a-plane rotation="-90 0 0" width="100" height="100" color="#333"></a-plane>
     <a-sky color="#87CEEB"></a-sky>
   </a-scene>
+
+  <script>
+    // Simple helper to bridge HTML buttons to A-Frame
+    function sendAction(type, active) {
+      const eventName = active ? 'action-start' : 'action-stop';
+      window.dispatchEvent(new CustomEvent(eventName, { detail: { type: type } }));
+    }
+  </script>
 </body>
 </html>
