@@ -4,8 +4,9 @@ AFRAME.registerComponent('mobile-player-controller', {
     this.activeAction = "idle";
     this.gunAttached = false;
     
-    // Scale the character
-    el.setAttribute('scale', '0.072 0.072 0.072');
+    // Scale the character 5 times smaller than before
+    // Original was 0.072, now we make it 5x smaller: 0.072 / 5 = 0.0144
+    el.setAttribute('scale', '0.0144 0.0144 0.0144');
 
     // Wait for model to load
     el.addEventListener('model-loaded', () => {
@@ -50,10 +51,13 @@ AFRAME.registerComponent('mobile-player-controller', {
         handBone.add(gunModel);
         
         // Position and rotate the gun relative to the hand
-        // You may need to adjust these values based on your models
-        gunModel.position.set(0.02, -0.01, 0.03); // Fine-tune these values
-        gunModel.rotation.set(0, Math.PI / 2, 0); // Rotate to align with hand
-        gunModel.scale.set(0.5, 0.5, 0.5); // Scale the gun to match player size
+        // Adjusted these values for the smaller scale
+        gunModel.position.set(0.02, -0.01, 0.03);
+        gunModel.rotation.set(0, Math.PI / 2, 0);
+        
+        // Scale the gun to match the smaller player size
+        // Previously was 0.5, now scale proportionally with player
+        gunModel.scale.set(0.1, 0.1, 0.1);
         
         // Make gun visible now that it's attached
         gunEntity.setAttribute('visible', 'true');
@@ -84,9 +88,9 @@ AFRAME.registerComponent('mobile-player-controller', {
       targetAnim = "reloading";
     } else if (this.activeAction === "move") {
       targetAnim = "run-forward";
-      // Forward Movement logic
+      // Forward Movement logic - adjusted speed for smaller scale
       const pos = el.getAttribute('position');
-      pos.z -= 0.05; 
+      pos.z -= 0.01; // Reduced movement speed for smaller scale
       el.setAttribute('position', pos);
     }
 
