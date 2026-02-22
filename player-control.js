@@ -3,23 +3,25 @@ AFRAME.registerComponent('mobile-player-controller', {
     const el = this.el;
     this.activeAction = "idle";
     
-    // 1. Scale the character as requested
-    el.setAttribute('scale', '0.072 0.072 0.072');
+    // Updated Scale: 5 times smaller than 0.072
+    el.setAttribute('scale', '0.0144 0.0144 0.0144');
 
-    // 2. Attach Gun to Hand Bone
     el.addEventListener('model-loaded', () => {
-      const sceneEl = el.object3D;
-      const gunEl = document.querySelector('#gun').object3D;
-      const handBone = sceneEl.getObjectByName('mixamorigRightHand');
+      const mesh = el.getObject3D('mesh');
+      const gun = document.querySelector('#gun').object3D;
+      
+      // Using the renamed bone from the gltf-transform script
+      const handBone = mesh.getObjectByName('Hand_R');
 
       if (handBone) {
-        handBone.add(gunEl);
-        gunEl.position.set(0, 0, 0); 
-        gunEl.rotation.set(Math.PI / 2, 0, 0);
+        handBone.add(gun); 
+        gun.position.set(0, 0, 0); 
+        gun.rotation.set(Math.PI / 2, 0, 0);
+        // Ensure gun is scaled appropriately to the tiny player
+        gun.scale.set(1, 1, 1); 
       }
     });
 
-    // 3. Listen for Touch Button Events
     window.addEventListener('action-start', (e) => { this.activeAction = e.detail.type; });
     window.addEventListener('action-stop', () => { this.activeAction = "idle"; });
   },
@@ -34,19 +36,17 @@ AFRAME.registerComponent('mobile-player-controller', {
       targetAnim = "reloading";
     } else if (this.activeAction === "move") {
       targetAnim = "run-forward";
-      // Forward Movement logic
       const pos = this.el.getAttribute('position');
-      pos.z -= 0.05; 
+      pos.z -= 0.02; // Adjusted speed for smaller scale
       this.el.setAttribute('position', pos);
     }
 
-    if (mixer.clip !== targetAnim) {
+    if (mixer && mixer.clip !== targetAnim) {
       this.el.setAttribute('animation-mixer', {clip: targetAnim, crossFadeDuration: 0.2});
     }
   }
 });
 
-// Simple helper to bridge HTML buttons to A-Frame
 function sendAction(type, active) {
   const eventName = active ? 'action-start' : 'action-stop';
   window.dispatchEvent(new CustomEvent(eventName, { detail: { type: type } }));
